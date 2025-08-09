@@ -1,0 +1,47 @@
+[
+    {
+        "id": 2,
+        "nev": "Salatak",
+        "tipus": "ea",
+        "evfolyam": 1,
+        "nap_idopont": "szerda_10:00",
+        "helyszin": "A epulet 101",
+        "oktato": {
+            "nev": "Kovacs Antal",
+            "email": "koan@tanfolyam.com"
+        },
+        "hallgatok": [
+            {
+                "id": 1,
+                "nev": "Kiss Benedek",
+                "email": "kissbenedek@hallgato.com"
+            },
+            {
+                "id": 2,
+                "nev": "Nagy Andrea",
+                "email": "nagyandrea@hallgato.com"
+            }
+        ],
+        "max_letszam": 25
+    },
+    {
+        "id": 3,
+        "nev": "string",
+        "tipus": "string",
+        "evfolyam": 0,
+        "nap_idopont": "string",
+        "helyszin": "string",
+        "oktato": {
+            "nev": "string",
+            "email": "string"
+        },
+        "hallgatok": [
+            {
+                "id": 1,
+                "nev": "string",
+                "email": "string"
+            }
+        ],
+        "max_letszam": 0
+    }
+]
