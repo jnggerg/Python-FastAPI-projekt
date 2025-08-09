@@ -45,7 +45,7 @@ async def get_kurzusok_filter(nap_idopont: str = None, oktato_email: str = None,
             filtercount+=1
         if filtercount > 1:
             raise HTTPException(status_code=400, detail="Csak egy filtert lehet megadni")
-        if k == "evfolyam" and evfolyam.isdigit():
+        if k == "evfolyam" and evfolyam and evfolyam.isdigit():
             filters[k] = int(v)
         
     if filtercount == 0:
@@ -60,12 +60,15 @@ async def get_kurzusok_filter(nap_idopont: str = None, oktato_email: str = None,
         raise HTTPException(status_code=404, detail="Nincs kurzusok.json file")
     
     for k in kurzusok:
-        if filter_key == "oktato_email" and k["oktato"]["email"] == filter_value:
-            kurzusok_filtered.append(k)
+        if filter_key == "oktato_email":  #külön statementekben continue-val, hiszen keyerror lenne az elif ágon
+            if k["oktato"]["email"] == filter_value:
+                kurzusok_filtered.append(k)
+            else:
+                continue
         elif k[filter_key] == filter_value:
             kurzusok_filtered.append(k)
 
-    return kurzusok_filtered
+    return kurzusok_filtered #mive elvárt response List, ezét nem létező esetén is [] a return
 
 @api.get("/kurzusok/filters", response_model=List[Kurzus])
 async def get_kurzusok_filters(nap_idopont: str = None, oktato_email: str = None, tipus: str = None, evfolyam: str = None, helyszin: str = None, max_letszam: int = None):
@@ -104,24 +107,19 @@ async def get_kurzusok_filters(nap_idopont: str = None, oktato_email: str = None
 
 @api.put("/kurzusok/{kurzus_id}", response_model=Kurzus)   
 async def update_kurzus(kurzus_id: int, kurzus: Kurzus):
-
-    kurzustemp = {"id": kurzus.id, "nev": kurzus.nev, "tipus": kurzus.tipus, "evfolyam": kurzus.evfolyam, "nap_idopont": kurzus.nap_idopont, "helyszin": kurzus.helyszin, "oktato": {"nev": kurzus.oktato.nev, "email": kurzus.oktato.email}, "hallgatok": [], "max_letszam": kurzus.max_letszam}
-
-    for h in kurzus.hallgatok:
-        kurzustemp["hallgatok"].append({"id": h.id, "nev": h.nev, "email": h.email})
+    kurzus = kurzus.model_dump() #dict parse
 
     kurzusok = file_handler.ReadKurzusok()
     if not kurzusok:
         raise HTTPException(status_code=404, detail="Nincs kurzusok.json file")
     
-    for i in range(len(kurzusok)):
-        if kurzusok[i]["id"] == kurzus_id:
-            kurzusok[i] = kurzustemp
+    for i,k in enumerate(kurzusok):
+        if k["id"] == kurzus_id:
+            kurzusok[i] = kurzus #kell az indexelés mivel k=.. esetén nem frissíti helyben a lista értékét
             file_handler.UpdateKurzusok(kurzusok)
             return kurzus
-
-    else:
-        raise HTTPException(status_code=404, detail="Nincs ilyen kurzus")
+        
+    raise HTTPException(status_code=404, detail="Nincs ilyen kurzus")
 
 @api.delete("/kurzusok/{kurzus_id}")
 async def delete_kurzus(kurzus_id: int):
@@ -140,18 +138,12 @@ async def delete_kurzus(kurzus_id: int):
 
 @api.get("/kurzusok/hallgatok/{hallgato_id}", response_model=List[Kurzus])
 async def get_hallgato_kurzusai(hallgato_id: int):
-    
-    if hallgato_id is None:
-        raise HTTPException(status_code=400, detail="Adja meg a hallgató id-t")
-    
-    hallgato_kurzusai = []
     kurzusok = file_handler.ReadKurzusok()
     if not kurzusok:
         raise HTTPException(status_code=404, detail="Nincs kurzusok.json file")
-    for k in kurzusok:
-        for h in k["hallgatok"]:
-            if h["id"] == hallgato_id:
-                hallgato_kurzusai.append(k)
+    
+    hallgato_kurzusai = []
+    [[hallgato_kurzusai.append(k) for h in k['hallgatok'] if h['id'] == hallgato_id] for k in kurzusok]
 
     if not hallgato_kurzusai:
         raise HTTPException(status_code=404, detail="Nem szerepel egyik kurzuson se ez a hallgató")
@@ -165,16 +157,11 @@ async def get_hallgato_kurzuson(kurzus_id: int, hallgato_id: int):
     if not kurzusok:
         raise HTTPException(status_code=404, detail="Nincs kurzusok.json file")
 
-    letezik_kurzus = False
-    for k in kurzusok:
-        if k["id"] == kurzus_id:
-            letezik_kurzus = True
-            for h in k["hallgatok"]:
-                if h["id"] == hallgato_id:
-                    return Valasz(uzenet = "Igen")
-
-    if not letezik_kurzus:
+    if not [1 for k in kurzusok if k['id'] == kurzus_id]:
         raise HTTPException(status_code=404, detail= "Nincs ilyen kurzus")
+
+    if [[1 for h in k['hallgatok'] if h['id'] == hallgato_id] for k in kurzusok if kurzus_id == k['id']][0]: #pythonosabb megoldas
+        return Valasz(uzenet="Igen")
     
     return Valasz(uzenet="Nem")
 
