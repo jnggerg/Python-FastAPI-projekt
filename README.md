@@ -1,4 +1,4 @@
-ELTE-IK University Python course assignment for learning FastAPI routes with Swagger UI testing and pydantic models.
+University Python course assignment for learning FastAPI routes with Swagger UI testing and pydantic models.
 How to run:
   - pip install uvicorn, fastapi
   - python3 app_sz/main.py
